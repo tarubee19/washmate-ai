@@ -1,0 +1,1 @@
+# washmate-ai
