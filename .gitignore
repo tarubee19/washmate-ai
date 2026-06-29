@@ -1,0 +1,12 @@
+__pycache__/
+*.py[cod]
+.env
+venv/
+.venv/
+backend/db.json
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.ino.elf
+*.ino.bin
