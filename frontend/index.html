@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>WashMate AI v3</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700&family=Inter:wght@400;500&display=swap" rel="stylesheet"/>
+  <style>
+    :root {
+      --bg:#0D1117; --surface:#161B22; --surface2:#1C2230;
+      --border:#21262D; --teal:#39D0C0; --teal-dim:#1A3D3A;
+      --coral:#FF6B6B; --coral-dim:#3A1A1A;
+      --gold:#F0B429; --gold-dim:#3A2E00;
+      --green:#3FB950; --green-dim:#0D2E18;
+      --purple:#A371F7; --purple-dim:#221A3A;
+      --red:#FF4444; --red-dim:#3A0A0A;
+      --text:#E6EDF3; --muted:#8B949E;
+      --radius:12px; --radius-sm:8px;
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:var(--bg);color:var(--text);font-family:'Inter',sans-serif;font-size:15px;line-height:1.6;padding-bottom:60px}
+
+    /* Header */
+    header{border-bottom:1px solid var(--border);padding:14px 22px;display:flex;align-items:center;gap:12px;position:sticky;top:0;background:rgba(13,17,23,.96);backdrop-filter:blur(10px);z-index:20}
+    .logo{width:32px;height:32px;background:var(--teal);border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:17px}
+    header h1{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:700}
+    header h1 span{color:var(--teal)}
+    .header-right{margin-left:auto;display:flex;align-items:center;gap:14px}
+    #clock{font-family:'Space Grotesk',sans-serif;font-size:12px;color:var(--muted)}
+
+    /* Notification bell */
+    .bell-btn{position:relative;cursor:pointer;background:none;border:none;color:var(--muted);font-size:19px;padding:4px;transition:color .2s}
+    .bell-btn:hover{color:var(--text)}
+    .notif-badge{position:absolute;top:-2px;right:-4px;background:var(--coral);color:#fff;font-size:10px;font-weight:700;border-radius:10px;padding:1px 5px;display:none}
+    .notif-badge.on{display:block}
+    #notif-panel{position:fixed;top:58px;right:14px;width:310px;max-height:380px;overflow-y:auto;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);z-index:30;padding:12px;display:none;box-shadow:0 8px 32px rgba(0,0,0,.5)}
+    #notif-panel.open{display:block}
+    .np-title{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:10px}
+    .ni{padding:10px 12px;border-radius:var(--radius-sm);margin-bottom:7px;font-size:12.5px;line-height:1.5;cursor:pointer}
+    .ni:hover{opacity:.8}
+    .ni.urgent{background:var(--coral-dim);border-left:3px solid var(--coral)}
+    .ni.success{background:var(--green-dim);border-left:3px solid var(--green)}
+    .ni.info{background:var(--surface2);border-left:3px solid var(--muted)}
+    .ni.warn{background:var(--gold-dim);border-left:3px solid var(--gold)}
+    .ni-time{font-size:10px;color:var(--muted);margin-top:3px}
+    .ni-empty{color:var(--muted);font-size:13px;text-align:center;padding:16px 0}
+
+    /* Grid */
+    .grid{max-width:980px;margin:0 auto;padding:22px 16px;display:grid;grid-template-columns:1fr 1fr;gap:16px}
+    @media(max-width:640px){.grid{grid-template-columns:1fr}}
+    .full{grid-column:1/-1}
+
+    /* Cards */
+    .card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px}
+    .card-title{font-family:'Space Grotesk',sans-serif;font-size:11px;font-weight:600;letter-spacing:.8px;text-transform:uppercase;color:var(--muted);margin-bottom:12px}
+
+    /* Inputs / Select */
+    select,input[type=text]{width:100%;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Inter',sans-serif;font-size:13.5px;padding:9px 12px;outline:none;transition:border-color .2s;appearance:none}
+    select:focus,input[type=text]:focus{border-color:var(--teal)}
+    .input-row{display:flex;gap:8px;align-items:center}
+    .input-row select{flex:1}
+    label.check-row{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--muted);cursor:pointer;margin-top:10px;line-height:1.4}
+    label.check-row input{margin-top:2px;accent-color:var(--teal);flex-shrink:0}
+    #user-info-bar{font-size:12px;color:var(--teal);margin-top:6px;min-height:16px}
+
+    /* Buttons */
+    .btn{display:inline-flex;align-items:center;gap:5px;border:none;border-radius:var(--radius-sm);font-family:'Space Grotesk',sans-serif;font-size:12.5px;font-weight:600;padding:8px 14px;cursor:pointer;transition:opacity .15s,transform .1s;white-space:nowrap}
+    .btn:hover{opacity:.85}.btn:active{transform:scale(.97)}.btn:disabled{opacity:.35;cursor:not-allowed;transform:none}
+    .btn-teal{background:var(--teal);color:#000}
+    .btn-coral{background:var(--coral-dim);color:var(--coral);border:1px solid var(--coral)}
+    .btn-gold{background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold)}
+    .btn-green{background:var(--green-dim);color:var(--green);border:1px solid var(--green)}
+    .btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border)}
+    .btn-purple{background:var(--purple-dim);color:var(--purple);border:1px solid var(--purple)}
+    .btn-red{background:var(--red-dim);color:var(--red);border:1px solid var(--red)}
+    .btn-sm{padding:6px 11px;font-size:11.5px}
+
+    /* Wash mode selector */
+    .mode-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:7px;margin-bottom:10px}
+    .mode-card{border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 6px;text-align:center;cursor:pointer;background:var(--bg);transition:border-color .2s,background .2s}
+    .mode-card:hover{border-color:var(--teal)}
+    .mode-card.sel{border-color:var(--teal);background:var(--teal-dim)}
+    .mode-icon{font-size:20px;display:block;margin-bottom:3px}
+    .mode-name{font-family:'Space Grotesk',sans-serif;font-size:11.5px;font-weight:600}
+    .mode-time{font-size:10.5px;color:var(--muted)}
+
+    /* Machine cards */
+    .machine{border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;margin-bottom:10px;transition:border-color .2s}
+    .machine:last-child{margin-bottom:0}
+    .machine.free{border-color:var(--green)}
+    .machine.in_use{border-color:var(--coral)}
+    .machine.escalation{border-color:var(--gold)}
+    .machine.out_of_order{border-color:var(--red)}
+    .mhdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+    .mname{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600}
+    .badge{font-size:10px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;padding:3px 8px;border-radius:20px}
+    .badge.free{background:var(--green-dim);color:var(--green);border:1px solid var(--green)}
+    .badge.in_use{background:var(--coral-dim);color:var(--coral);border:1px solid var(--coral)}
+    .badge.escalation{background:var(--gold-dim);color:var(--gold);border:1px solid var(--gold)}
+    .badge.out_of_order{background:var(--red-dim);color:var(--red);border:1px solid var(--red)}
+    .occupant-box{background:var(--surface2);border-radius:var(--radius-sm);padding:9px 11px;margin-bottom:10px;font-size:12.5px}
+    .occupant-box strong{color:var(--text)}
+    .room-tag{display:inline-block;background:var(--teal-dim);color:var(--teal);border-radius:4px;padding:1px 6px;font-size:10.5px;font-weight:600;margin-left:5px}
+    .prog-wrap{background:var(--border);border-radius:4px;height:4px;margin-bottom:9px;overflow:hidden}
+    .prog-bar{height:100%;border-radius:4px;transition:width .5s}
+    .prog-bar.in_use{background:var(--coral)}
+    .prog-bar.escalation{background:var(--gold);animation:pulse-bar 1s infinite alternate}
+    @keyframes pulse-bar{from{opacity:1}to{opacity:.3}}
+    .countdown{font-family:'Space Grotesk',sans-serif;font-size:12px;font-weight:700;color:var(--gold);background:var(--gold-dim);border:1px solid var(--gold);border-radius:5px;padding:3px 9px;display:inline-block;margin-bottom:8px;animation:pulse-badge 1s infinite alternate}
+    @keyframes pulse-badge{from{opacity:1}to{opacity:.6}}
+    .mactions{display:flex;gap:7px;flex-wrap:wrap}
+
+    /* Ready check banner */
+    .ready-check-banner{background:var(--gold-dim);border:1px solid var(--gold);border-radius:var(--radius-sm);padding:10px 12px;margin-bottom:12px;font-size:13px;color:var(--gold)}
+    .ready-check-banner .rc-actions{display:flex;gap:8px;margin-top:8px}
+
+    /* Queue */
+    .qi{display:flex;align-items:center;gap:9px;padding:9px 11px;background:var(--bg);border-radius:var(--radius-sm);margin-bottom:7px;font-size:13px}
+    .qi-pos{font-family:'Space Grotesk',sans-serif;font-size:16px;font-weight:700;color:var(--gold);width:22px}
+    .qi-details{flex:1}
+    .qi-name{font-weight:500}
+    .qi-room{font-size:10.5px;color:var(--muted)}
+    .qi-rc{font-size:10.5px}
+    .qi-rc.yes{color:var(--green)}
+    .qi-rc.no{color:var(--coral)}
+    .qi-time{font-size:11px;color:var(--muted)}
+    .q-empty{text-align:center;color:var(--muted);padding:16px 0;font-size:13px}
+
+    /* Compliance leaderboard */
+    .lb-row{display:flex;align-items:center;gap:10px;padding:8px 10px;background:var(--bg);border-radius:var(--radius-sm);margin-bottom:6px;font-size:12.5px}
+    .lb-rank{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:700;width:20px;color:var(--muted)}
+    .lb-info{flex:1}
+    .lb-name{font-weight:500}
+    .lb-room{font-size:10.5px;color:var(--muted)}
+    .lb-score{font-family:'Space Grotesk',sans-serif;font-size:14px;font-weight:700}
+
+    /* Heatmap */
+    .heatmap-wrap{overflow-x:auto;padding-bottom:4px}
+    .heatmap-grid{display:grid;grid-template-columns:70px repeat(24,1fr);gap:2px;min-width:680px}
+    .hm-lbl{font-size:9.5px;color:var(--muted);display:flex;align-items:center;justify-content:flex-end;padding-right:5px}
+    .hm-cell{height:20px;border-radius:2px;background:var(--border);transition:background .3s;position:relative;cursor:default}
+    .hm-cell:hover::after{content:attr(data-tip);position:absolute;bottom:24px;left:50%;transform:translateX(-50%);background:var(--surface2);border:1px solid var(--border);color:var(--text);font-size:10px;white-space:nowrap;padding:3px 7px;border-radius:4px;z-index:5}
+
+    /* Chart */
+    .chart-wrap{display:flex;align-items:flex-end;gap:2px;height:72px;padding-top:4px}
+    .chart-col{flex:1;display:flex;flex-direction:column;align-items:center}
+    .chart-bar{width:100%;border-radius:3px 3px 0 0;min-height:2px;transition:height .4s}
+    .chart-bar.high{background:var(--coral)}
+    .chart-bar.med{background:var(--gold)}
+    .chart-bar.low{background:var(--teal)}
+    .chart-x{display:flex;gap:2px;margin-top:2px}
+    .chart-x span{flex:1;text-align:center;font-size:8px;color:var(--muted)}
+
+    /* Tabs */
+    .tabs{display:flex;gap:2px;margin-bottom:12px;background:var(--bg);border-radius:var(--radius-sm);padding:3px}
+    .tab{flex:1;text-align:center;padding:7px;border-radius:6px;font-family:'Space Grotesk',sans-serif;font-size:11.5px;font-weight:600;cursor:pointer;color:var(--muted);transition:background .2s,color .2s;border:none;background:none}
+    .tab.on{background:var(--surface2);color:var(--text)}
+
+    /* Chat */
+    .chat-win{height:240px;overflow-y:auto;background:var(--bg);border-radius:var(--radius-sm);padding:11px;margin-bottom:9px;display:flex;flex-direction:column;gap:7px}
+    .chat-win::-webkit-scrollbar{width:4px}
+    .chat-win::-webkit-scrollbar-thumb{background:var(--border);border-radius:4px}
+    .msg{max-width:84%;padding:9px 13px;border-radius:11px;font-size:13px;line-height:1.5}
+    .msg.user{background:var(--teal-dim);color:var(--teal);align-self:flex-end;border-bottom-right-radius:3px}
+    .msg.ai{background:var(--surface2);border:1px solid var(--border);color:var(--text);align-self:flex-start;border-bottom-left-radius:3px}
+    .msg.typing{color:var(--muted);font-style:italic}
+    .chat-row{display:flex;gap:7px}
+    .chat-row input{flex:1;background:var(--bg);border:1px solid var(--border);border-radius:var(--radius-sm);color:var(--text);font-family:'Inter',sans-serif;font-size:13.5px;padding:9px 13px;outline:none;transition:border-color .2s}
+    .chat-row input:focus{border-color:var(--teal)}
+    .chips{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+    .chip{background:transparent;border:1px solid var(--border);color:var(--muted);border-radius:20px;padding:4px 10px;font-size:11.5px;cursor:pointer;transition:border-color .15s,color .15s}
+    .chip:hover{border-color:var(--teal);color:var(--teal)}
+
+    /* Toast */
+    #toast{position:fixed;bottom:22px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:11px 20px;border-radius:var(--radius);font-size:13px;transition:transform .3s,opacity .3s;opacity:0;z-index:100;white-space:nowrap}
+    #toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="logo">🫧</div>
+  <h1>Wash<span>Mate</span> AI <span style="font-size:11px;color:var(--muted);font-weight:400">v3</span></h1>
+  <div class="header-right">
+    <span id="clock">–</span>
+    <button class="bell-btn" onclick="togglePanel()" title="Notifications">
+      🔔<span class="notif-badge" id="nbadge">0</span>
+    </button>
+  </div>
+</header>
+
+<div id="notif-panel">
+  <div class="np-title">Notifications</div>
+  <div id="notif-list"><div class="ni-empty">No new notifications</div></div>
+</div>
+
+<div class="grid">
+
+  <!-- LOGIN -->
+  <div class="card full">
+    <div class="card-title">Your Identity</div>
+    <div class="input-row">
+      <select id="roll-select" onchange="onRollChange()">
+        <option value="">— Select your roll number —</option>
+      </select>
+    </div>
+    <div id="user-info-bar"></div>
+  </div>
+
+  <!-- MACHINES -->
+  <div class="card">
+    <div class="card-title">🫧 Machines</div>
+
+    <div style="font-size:11.5px;color:var(--muted);margin-bottom:7px">Select wash mode before starting:</div>
+    <div class="mode-grid">
+      <div class="mode-card sel" id="mode-heavy" onclick="selMode('heavy')">
+        <span class="mode-icon">🧺</span>
+        <div class="mode-name">Heavy</div>
+        <div class="mode-time">45 min</div>
+      </div>
+      <div class="mode-card" id="mode-light" onclick="selMode('light')">
+        <span class="mode-icon">👕</span>
+        <div class="mode-name">Light</div>
+        <div class="mode-time">30 min</div>
+      </div>
+      <div class="mode-card" id="mode-spin" onclick="selMode('spin')">
+        <span class="mode-icon">💨</span>
+        <div class="mode-name">Spin/Dry</div>
+        <div class="mode-time">15 min</div>
+      </div>
+    </div>
+
+    <label class="check-row">
+      <input type="checkbox" id="basket-check"/>
+      I have placed my labelled basket on top of the machine (hostel policy)
+    </label>
+
+    <!-- Ready Check Banner (shown when you're next and a ready check arrived) -->
+    <div id="ready-check-banner" style="display:none;margin-top:10px"></div>
+
+    <div style="margin-top:12px" id="machines-list">Loading…</div>
+  </div>
+
+  <!-- QUEUE -->
+  <div class="card">
+    <div class="card-title">📋 Smart Queue</div>
+    <div id="queue-list">Loading…</div>
+    <div style="margin-top:10px;display:flex;gap:7px;flex-wrap:wrap">
+      <button class="btn btn-gold btn-sm" onclick="joinQueue()">+ Join Queue</button>
+      <button class="btn btn-ghost btn-sm" onclick="leaveQueue()">Leave Queue</button>
+    </div>
+  </div>
+
+  <!-- AI CHAT -->
+  <div class="card full">
+    <div class="card-title">🤖 AI Laundry Assistant</div>
+    <div class="chips">
+      <button class="chip" onclick="chip('Is any machine free right now?')">Any machine free?</button>
+      <button class="chip" onclick="chip('Who is using Machine A?')">Who is on A?</button>
+      <button class="chip" onclick="chip('Is Arjun Sharma in Room A-101 using a machine?')">Is Arjun using?</button>
+      <button class="chip" onclick="chip('What are the quietest hours today?')">Quietest hours?</button>
+      <button class="chip" onclick="chip('Show me the compliance leaderboard')">Compliance board?</button>
+    </div>
+    <div class="chat-win" id="chat-win">
+      <div class="msg ai">👋 Hi! Ask me who's using which machine, best times, compliance scores — I have live data from the hostel database.</div>
+    </div>
+    <div class="chat-row">
+      <input id="chat-in" type="text" placeholder="Ask about machines, residents, wait times…" onkeydown="if(event.key==='Enter')sendChat()"/>
+      <button class="btn btn-teal" onclick="sendChat()">Send</button>
+    </div>
+  </div>
+
+  <!-- ANALYTICS -->
+  <div class="card full">
+    <div class="card-title">📊 Peak Analytics</div>
+    <div class="tabs">
+      <button class="tab on" onclick="switchTab('bar')">Hourly Chart</button>
+      <button class="tab" onclick="switchTab('heatmap')">Day × Hour Heatmap</button>
+      <button class="tab" onclick="switchTab('compliance')">Compliance Board</button>
+    </div>
+
+    <div id="tab-bar">
+      <div class="chart-wrap" id="peak-chart"></div>
+      <div class="chart-x" id="chart-x"></div>
+      <div style="display:flex;gap:12px;margin-top:8px;font-size:11px;color:var(--muted)">
+        <span><span style="display:inline-block;width:9px;height:9px;background:var(--coral);border-radius:2px;margin-right:3px;vertical-align:middle"></span>High</span>
+        <span><span style="display:inline-block;width:9px;height:9px;background:var(--gold);border-radius:2px;margin-right:3px;vertical-align:middle"></span>Medium</span>
+        <span><span style="display:inline-block;width:9px;height:9px;background:var(--teal);border-radius:2px;margin-right:3px;vertical-align:middle"></span>Low</span>
+      </div>
+    </div>
+
+    <div id="tab-heatmap" style="display:none">
+      <div class="heatmap-wrap">
+        <div class="heatmap-grid" id="heatmap-grid">Loading…</div>
+      </div>
+    </div>
+
+    <div id="tab-compliance" style="display:none">
+      <div id="compliance-list">Loading…</div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast"></div>
+
+<script>
+const API = "http://127.0.0.1:8000";
+let roll = localStorage.getItem("wm_roll") || "";
+let selMode = "heavy";
+let hmData  = [];
+let panelOpen = false;
+// Pending ready check (stored so user can respond)
+let pendingReadyCheck = null;
+
+/* ── Clock ── */
+const tick = () => {
+  document.getElementById("clock").textContent =
+    new Date().toLocaleTimeString([], {hour:"2-digit",minute:"2-digit"});
+};
+tick(); setInterval(tick, 10000);
+
+/* ── Boot ── */
+async function boot() {
+  const res   = await fetch(`${API}/students`).catch(()=>null);
+  if (!res) { toast("⚠️ Backend not running — start uvicorn first"); return; }
+  const studs = await res.json();
+  const sel   = document.getElementById("roll-select");
+  studs.forEach(s => {
+    const o = document.createElement("option");
+    o.value       = s.roll;
+    o.textContent = `${s.roll} — ${s.name} (Room ${s.room})`;
+    sel.appendChild(o);
+  });
+  if (roll) { sel.value = roll; onRollChange(); }
+  fetchAll();
+}
+
+function onRollChange() {
+  const sel = document.getElementById("roll-select");
+  roll = sel.value;
+  localStorage.setItem("wm_roll", roll);
+  const opt = sel.options[sel.selectedIndex];
+  document.getElementById("user-info-bar").textContent = roll ? `Logged in: ${opt.textContent}` : "";
+}
+
+function needRoll() {
+  if (!roll) { toast("Select your roll number first"); return false; }
+  return true;
+}
+
+/* ── Mode selector ── */
+function selMode(m) {
+  selMode = m;
+  ["heavy","light","spin"].forEach(x =>
+    document.getElementById(`mode-${x}`).classList.toggle("sel", x === m));
+}
+selMode("heavy");
+
+/* ── Machines ── */
+async function fetchMachines() {
+  const res = await fetch(`${API}/machines`).catch(()=>null);
+  if (!res) return;
+  renderMachines(await res.json());
+}
+
+function renderMachines(machines) {
+  const el = document.getElementById("machines-list");
+  el.innerHTML = "";
+  machines.forEach(m => {
+    const isFree = m.status === "free";
+    const inUse  = m.status === "in_use";
+    const esc    = m.status === "escalation";
+    const oor    = m.status === "out_of_order";
+
+    let pct = 0;
+    if (inUse && m.cycle_minutes > 0)
+      pct = Math.min(100, ((m.cycle_minutes - m.minutes_remaining) / m.cycle_minutes) * 100);
+    else if (esc)
+      pct = Math.min(100, ((300 - m.escalation_seconds_remaining) / 300) * 100);
+
+    let occupantHtml = "";
+    if (inUse && m.occupant)
+      occupantHtml = `<div class="occupant-box">
+        🧑 <strong>${m.occupant.name}</strong><span class="room-tag">Room ${m.occupant.room}</span>
+        &nbsp;·&nbsp; ${m.mode_label}</div>`;
+    else if (esc && m.escalation_target)
+      occupantHtml = `<div class="countdown">⏳ ${m.escalation_target.name} confirming — ${Math.floor(m.escalation_seconds_remaining/60)}:${String(m.escalation_seconds_remaining%60).padStart(2,'0')}</div><br>`;
+    else if (oor)
+      occupantHtml = `<div style="font-size:12.5px;color:var(--red);margin-bottom:8px">🔧 Reported broken — awaiting repair</div>`;
+
+    // Move clothes permitted
+    let moveHtml = "";
+    if (m.move_clothes_permitted)
+      moveHtml = `<div style="font-size:12px;color:var(--gold);background:var(--gold-dim);border-radius:5px;padding:6px 9px;margin-bottom:8px">
+        ⚠️ System permits you to move previous user's clothes into the basket.</div>`;
+
+    let actions = "";
+    if (isFree)
+      actions = `<button class="btn btn-teal btn-sm" onclick="startWash(${m.id})">▶ Start Wash</button>`;
+    else if (inUse) {
+      actions = `<button class="btn btn-coral btn-sm" onclick="extendWash(${m.id})">⏱ +15 min</button>
+        <button class="btn btn-red btn-sm" onclick="reportBroken(${m.id})">🔧 Report Broken</button>`;
+      // Clothes collected button (for next user arriving)
+      actions += `<button class="btn btn-ghost btn-sm" onclick="reportCollected(${m.id}, false)">Clothes gone</button>
+                  <button class="btn btn-ghost btn-sm" onclick="reportCollected(${m.id}, true)">Clothes present</button>`;
+    }
+    else if (esc && m.escalation_target && m.escalation_target.roll === roll)
+      actions = `<button class="btn btn-green btn-sm" onclick="confirmArrival(${m.id})">✋ I'm Coming!</button>`;
+    else if (oor)
+      actions = `<button class="btn btn-ghost btn-sm" onclick="reportBroken(${m.id})">Add my report</button>`;
+
+    el.innerHTML += `
+      <div class="machine ${m.status}">
+        <div class="mhdr">
+          <span class="mname">${m.name}</span>
+          <span class="badge ${m.status}">${m.status === "free" ? "Free" : m.status === "in_use" ? "In Use" : m.status === "escalation" ? "Confirming…" : "Out of Order"}</span>
+        </div>
+        ${occupantHtml}
+        ${moveHtml}
+        ${(inUse || esc) ? `<div class="prog-wrap"><div class="prog-bar ${m.status}" style="width:${pct}%"></div></div>
+        <div style="font-size:11.5px;color:var(--muted);margin-bottom:8px">${inUse ? m.minutes_remaining + " min remaining" : ""}</div>` : ""}
+        <div class="mactions">${actions}</div>
+      </div>`;
+  });
+}
+
+async function startWash(mid) {
+  if (!needRoll()) return;
+  const basket = document.getElementById("basket-check").checked;
+  const res = await fetch(`${API}/machines/${mid}/start`, {
+    method: "POST", headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({machine_id: mid, roll, mode: selMode, basket_confirmed: basket})
+  });
+  const d = await res.json();
+  toast(res.ok ? d.message : (d.detail || "Error"));
+  if (res.ok) fetchAll();
+}
+
+async function extendWash(mid) {
+  const res = await fetch(`${API}/machines/${mid}/extend`, {method:"POST"});
+  const d   = await res.json();
+  toast(res.ok ? d.message : d.detail);
+  if (res.ok) fetchMachines();
+}
+
+async function confirmArrival(mid) {
+  if (!needRoll()) return;
+  const res = await fetch(`${API}/machines/${mid}/confirm-arrival`, {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({roll, machine_id: mid})
+  });
+  const d = await res.json();
+  toast(res.ok ? d.message : d.detail);
+  if (res.ok) fetchAll();
+}
+
+async function reportBroken(mid) {
+  if (!needRoll()) return;
+  const res = await fetch(`${API}/machines/${mid}/report-broken`, {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({roll, machine_id: mid})
+  });
+  const d = await res.json();
+  toast(res.ok ? d.message : d.detail);
+  if (res.ok) fetchMachines();
+}
+
+async function reportCollected(mid, present) {
+  if (!needRoll()) return;
+  const res = await fetch(`${API}/machines/${mid}/collected`, {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({machine_id: mid, reporter_roll: roll, clothes_present: present})
+  });
+  const d = await res.json();
+  toast(d.message || d.detail);
+}
+
+/* ── Queue ── */
+async function fetchQueue() {
+  const res = await fetch(`${API}/queue`).catch(()=>null);
+  if (!res) return;
+  const q = await res.json();
+  const el = document.getElementById("queue-list");
+  if (!q.length) { el.innerHTML = '<div class="q-empty">Queue empty 🎉</div>'; return; }
+  el.innerHTML = q.map((item,i) => {
+    const rcClass = item.ready_check_response === "yes" ? "yes" : item.ready_check_response === "no" ? "no" : "";
+    const rcText  = item.ready_check_response === "yes" ? "✓ Ready" : item.ready_check_response === "no" ? "✗ Skipped" : "";
+    return `<div class="qi">
+      <span class="qi-pos">${i+1}</span>
+      <div class="qi-details">
+        <div class="qi-name">${item.name}${item.is_banned ? ' 🚫' : ''}</div>
+        <div class="qi-room">Room ${item.room}</div>
+      </div>
+      ${rcText ? `<span class="qi-rc ${rcClass}">${rcText}</span>` : ""}
+      <span class="qi-time">${timeAgo(item.joined_at)}</span>
+    </div>`;
+  }).join("");
+}
+
+async function joinQueue() {
+  if (!needRoll()) return;
+  const res = await fetch(`${API}/queue/join`, {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({roll})
+  });
+  const d = await res.json();
+  toast(res.ok ? `You're #${d.position} in queue` : (d.detail || "Error"));
+  if (res.ok) fetchQueue();
+}
+
+async function leaveQueue() {
+  if (!needRoll()) return;
+  const res = await fetch(`${API}/queue/leave`, {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({roll})
+  });
+  toast((await res.json()).message || "Done");
+  fetchQueue();
+}
+
+async function respondReadyCheck(response) {
+  if (!needRoll()) return;
+  const res = await fetch(`${API}/queue/ready-check-response`, {
+    method:"POST", headers:{"Content-Type":"application/json"},
+    body: JSON.stringify({roll, response})
+  });
+  toast((await res.json()).message || "Done");
+  document.getElementById("ready-check-banner").style.display = "none";
+  fetchQueue();
+}
+
+/* ── Notifications ── */
+function togglePanel() {
+  panelOpen = !panelOpen;
+  document.getElementById("notif-panel").classList.toggle("open", panelOpen);
+}
+
+async function fetchNotifs() {
+  if (!roll) return;
+  const res = await fetch(`${API}/notifications/${roll}`).catch(()=>null);
+  if (!res) return;
+  const ns  = await res.json();
+  const badge = document.getElementById("nbadge");
+  const list  = document.getElementById("notif-list");
+  badge.textContent = ns.length;
+  badge.classList.toggle("on", ns.length > 0);
+  if (!ns.length) { list.innerHTML = '<div class="ni-empty">No new notifications</div>'; return; }
+
+  list.innerHTML = ns.map(n => `
+    <div class="ni ${n.type}" onclick="markRead('${n.id}')">
+      ${n.message}
+      <div class="ni-time">${timeAgo(n.created_at)} · tap to dismiss</div>
+    </div>`).join("");
+
+  // Check for ready-check notifications and show banner
+  const rc = ns.find(n => n.message.includes("READY CHECK"));
+  if (rc) showReadyCheckBanner();
+}
+
+function showReadyCheckBanner() {
+  const el = document.getElementById("ready-check-banner");
+  el.innerHTML = `<div class="ready-check-banner">
+    🔔 <strong>Ready Check!</strong> A machine is finishing soon. Are you still coming?
+    <div class="rc-actions">
+      <button class="btn btn-green btn-sm" onclick="respondReadyCheck('yes')">✓ Yes, I'm Coming</button>
+      <button class="btn btn-ghost btn-sm" onclick="respondReadyCheck('no')">✗ No, Skip Me</button>
+    </div>
+  </div>`;
+  el.style.display = "block";
+}
+
+async function markRead(nid) {
+  await fetch(`${API}/notifications/${nid}/read`, {method:"POST"});
+  fetchNotifs();
+}
+
+/* ── Analytics ── */
+async function fetchPeakHours() {
+  const res = await fetch(`${API}/analytics/peak-hours`).catch(()=>null);
+  if (!res) return;
+  const data = await res.json();
+  const chart = document.getElementById("peak-chart");
+  const xEl   = document.getElementById("chart-x");
+  chart.innerHTML = ""; xEl.innerHTML = "";
+  const max = Math.max(...data.map(d => d.busyness_score)) || 1;
+  data.forEach(d => {
+    const h   = (d.busyness_score / max) * 100;
+    const cls = d.busyness_score >= 70 ? "high" : d.busyness_score >= 35 ? "med" : "low";
+    const col = document.createElement("div"); col.className = "chart-col"; col.title = `${d.label}: ${d.sessions} sessions`;
+    const bar = document.createElement("div"); bar.className = `chart-bar ${cls}`; bar.style.height = `${Math.max(h,2)}%`;
+    col.appendChild(bar); chart.appendChild(col);
+    const lbl = document.createElement("span"); lbl.textContent = d.hour % 4 === 0 ? `${d.hour}h` : "";
+    xEl.appendChild(lbl);
+  });
+}
+
+async function fetchHeatmap() {
+  if (hmData.length) { renderHeatmap(hmData); return; }
+  const res = await fetch(`${API}/analytics/peak-heatmap`).catch(()=>null);
+  if (!res) return;
+  hmData = await res.json(); renderHeatmap(hmData);
+}
+
+function renderHeatmap(data) {
+  const el   = document.getElementById("heatmap-grid");
+  const days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"];
+  function scoreToColor(s) {
+    if (s===0) return "var(--border)";
+    if (s<20) return "#0d2a0d"; if (s<40) return "#1a3d1a";
+    if (s<55) return "#1A3D3A"; if (s<70) return "#3A2E00";
+    if (s<85) return "#3A1A1A"; return "var(--coral)";
+  }
+  let html = '<div class="hm-lbl"></div>';
+  for (let h=0;h<24;h++) html+=`<div class="hm-lbl" style="justify-content:center;font-size:8.5px">${h%4===0?h+'h':''}</div>`;
+  days.forEach(day => {
+    html += `<div class="hm-lbl">${day.slice(0,3)}</div>`;
+    for (let h=0;h<24;h++) {
+      const cell = data.find(d=>d.day===day&&d.hour===h);
+      const s    = cell ? cell.busyness_score : 0;
+      html += `<div class="hm-cell" style="background:${scoreToColor(s)}" data-tip="${day} ${h}:00 — ${cell?cell.sessions:0} sessions"></div>`;
+    }
+  });
+  el.innerHTML = html;
+}
+
+async function fetchCompliance() {
+  const res = await fetch(`${API}/analytics/compliance-report`).catch(()=>null);
+  if (!res) return;
+  const data = await res.json();
+  const el   = document.getElementById("compliance-list");
+  el.innerHTML = data.map((s,i) => {
+    const color = s.compliance_rate >= 80 ? "var(--green)" : s.compliance_rate >= 60 ? "var(--gold)" : "var(--coral)";
+    return `<div class="lb-row">
+      <span class="lb-rank">${i+1}</span>
+      <div class="lb-info"><div class="lb-name">${s.name}${s.is_banned?" 🚫":""}</div><div class="lb-room">Room ${s.room} · ${s.total_washes} washes</div></div>
+      <span class="lb-score" style="color:${color}">${s.compliance_rate}%</span>
+    </div>`;
+  }).join("");
+}
+
+function switchTab(tab) {
+  document.getElementById("tab-bar").style.display        = tab==="bar"        ? "block" : "none";
+  document.getElementById("tab-heatmap").style.display    = tab==="heatmap"    ? "block" : "none";
+  document.getElementById("tab-compliance").style.display = tab==="compliance" ? "block" : "none";
+  document.querySelectorAll(".tab").forEach((t,i)=>{
+    t.classList.toggle("on", (i===0&&tab==="bar")||(i===1&&tab==="heatmap")||(i===2&&tab==="compliance"));
+  });
+  if (tab==="heatmap")    fetchHeatmap();
+  if (tab==="compliance") fetchCompliance();
+}
+
+/* ── Chat ── */
+function appendMsg(text, role) {
+  const win = document.getElementById("chat-win");
+  const div = document.createElement("div");
+  div.className   = `msg ${role}`;
+  div.textContent = text;
+  win.appendChild(div);
+  win.scrollTop   = win.scrollHeight;
+  return div;
+}
+
+async function sendChat() {
+  const inp = document.getElementById("chat-in");
+  const msg = inp.value.trim(); if (!msg) return;
+  inp.value = "";
+  appendMsg(msg, "user");
+  const t = appendMsg("Thinking…", "ai typing");
+  try {
+    const res  = await fetch(`${API}/chat`, {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({message: msg, roll})
+    });
+    const d = await res.json();
+    t.textContent = d.reply || d.detail || "Error";
+    t.classList.remove("typing");
+  } catch {
+    t.textContent = "⚠️ Cannot reach backend."; t.classList.remove("typing");
+  }
+}
+
+function chip(t) { document.getElementById("chat-in").value = t; sendChat(); }
+
+/* ── Utils ── */
+function toast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg; t.classList.add("show");
+  setTimeout(()=>t.classList.remove("show"), 3500);
+}
+function timeAgo(iso) {
+  const d = Math.floor((Date.now()-new Date(iso))/60000);
+  if (d<1) return "just now"; if (d<60) return `${d}m ago`;
+  return `${Math.floor(d/60)}h ago`;
+}
+
+/* ── Polling ── */
+function fetchAll() { fetchMachines(); fetchQueue(); fetchPeakHours(); }
+boot();
+setInterval(fetchAll, 10000);
+setInterval(fetchNotifs, 5000);
+</script>
+</body>
+</html>
