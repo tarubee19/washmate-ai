@@ -1,4 +1,4 @@
-# 🫧 WashMate AI v3
+# WashMate AI
 
 > A physical-digital laundry management system for student hostels — combining IoT hardware control, Smart Queue escalation, roll-number identity, roommate fallback notifications, and a compliance reputation engine.
 
